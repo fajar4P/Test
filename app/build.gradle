@@ -35,9 +35,13 @@ dependencies {
     //new library
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'com.hbb20:ccp:2.2.9'
+    implementation 'com.google.firebase:firebase-auth:16.0.5'
+    implementation 'com.squareup.retrofit2:retrofit:2.6.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.6.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.1'
 
     //default
-    implementation 'com.google.firebase:firebase-auth:16.0.5'
+
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'

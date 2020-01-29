@@ -13,7 +13,12 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthProvider
+import com.pojokdev.testproject.data.ResponseLogin
+import com.pojokdev.testproject.network.ApiService
 import kotlinx.android.synthetic.main.activity_verify_phone.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.concurrent.TimeUnit
 
 
@@ -35,7 +40,7 @@ class VerifyPhoneActivity : AppCompatActivity() {
 
         button_send_verification.setOnClickListener {
 
-            //
+
             val phone = edit_text_phone.text.toString().trim()
 
             if (phone.isEmpty()) {
@@ -43,7 +48,7 @@ class VerifyPhoneActivity : AppCompatActivity() {
                 edit_text_phone.requestFocus()
                 return@setOnClickListener
             }
-
+            doLogin(phone)
             val phoneNumber = '+' + ccp.selectedCountryCode + phone
 
             PhoneAuthProvider.getInstance()
@@ -54,14 +59,11 @@ class VerifyPhoneActivity : AppCompatActivity() {
                     this,
                     phoneAuthCallbacks
                 )
-
-
-            //
-            layoutPhone.visibility = View.GONE
-            layoutVerification.visibility = View.VISIBLE
         }
 
+
         button_verify.setOnClickListener {
+
             val code = edit_text_code.text.toString().trim()
 
             if(code.isEmpty()){
@@ -78,20 +80,26 @@ class VerifyPhoneActivity : AppCompatActivity() {
 
     }
 
-
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return super.onSupportNavigateUp()
-    }
-
-
-    //////////////////////////
+   //////////////////////////
 
     private val phoneAuthCallbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+
+
+        override fun onCodeSent(verificationId: String?, token: PhoneAuthProvider.ForceResendingToken?) {
+            super.onCodeSent(verificationId, token)
+            this@VerifyPhoneActivity.verificationId = verificationId
+        }
+
+
         override fun onVerificationCompleted(phoneAuthCredential: PhoneAuthCredential?) {
-            phoneAuthCredential?.let {
-                addPhoneNumber(phoneAuthCredential)
+
+           phoneAuthCredential?.let {
+                //addPhoneNumber(phoneAuthCredential)
+            //    toast("verifikasi complate")
+                    Log.d("onComplate", "onVerificationCompleted:$phoneAuthCredential")
             }
+
+
         }
 
         override fun onVerificationFailed(exception: FirebaseException?) {
@@ -100,16 +108,14 @@ class VerifyPhoneActivity : AppCompatActivity() {
             //context?.toast(exception?.message!!)
         }
 
-        override fun onCodeSent(verificationId: String?, token: PhoneAuthProvider.ForceResendingToken?) {
-            super.onCodeSent(verificationId, token)
-            this@VerifyPhoneActivity.verificationId = verificationId
-        }
+
     }
 
     private fun addPhoneNumber(phoneAuthCredential: PhoneAuthCredential) {
         FirebaseAuth.getInstance()
-            .currentUser?.updatePhoneNumber(phoneAuthCredential)
-            ?.addOnCompleteListener { task ->
+            //.currentUser?.updatePhoneNumber(phoneAuthCredential)
+            .signInWithCredential(phoneAuthCredential)
+            .addOnCompleteListener { task: Task<AuthResult> ->
                 if (task.isSuccessful) {
                     toast("Logged in Successfully :)")
                     startActivity(Intent(this, MainActivity::class.java))
@@ -119,8 +125,61 @@ class VerifyPhoneActivity : AppCompatActivity() {
             }
     }
 
-    private fun toast (msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
-    }
     /////////////////////////
+
+    fun doLogin(nohp: String){
+        onLoading(true)
+        ApiService.endpoint.cekNohp(nohp)
+            .enqueue(object  : Callback<ResponseLogin>{
+                override fun onFailure(call: Call<ResponseLogin>, t: Throwable) {
+                    onLoading(false)
+                }
+
+                override fun onResponse(
+                    call: Call<ResponseLogin>,
+                    response: Response<ResponseLogin>
+                ) {
+                    //onLoading(false)
+
+                        val responseLogin: ResponseLogin? = response.body()
+                        if(responseLogin!!.values == true){
+                            toast("Nomor benar")
+                            layoutPhone.visibility = View.GONE
+                            layoutVerification.visibility = View.VISIBLE
+
+                            onLoading( false)
+                        } else{
+                            toast("nomor salah")
+                        }
+
+                }
+
+            })
+
+    }
+
+   fun onLoading(loading: Boolean){
+
+        when(loading) {
+
+            true -> {
+                progressbar.visibility = View.VISIBLE
+                button_verify.visibility = View.GONE
+            }
+            false -> {
+            progressbar.visibility = View.GONE
+            button_verify.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun toast (msg: String) {
+        Toast.makeText(applicationContext, msg, Toast.LENGTH_LONG).show()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return super.onSupportNavigateUp()
+    }
+
 }
